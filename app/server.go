@@ -1,12 +1,11 @@
 package main
 
 import (
-	"errors"
 	"fmt"
-	"io"
 	"log"
 	"net"
 	"os"
+	"strings"
 )
 
 func main() {
@@ -26,26 +25,30 @@ func main() {
 			fmt.Println("Error", err)
 			continue
 		}
-		go handleConnection(conn)
+		go handleRequest(conn)
 	}
 }
 
-func handleConnection(conn net.Conn) {
+func handleRequest(conn net.Conn) {
 	defer conn.Close()
 
-	for {
-		buffer := make([]byte, 2048)
-		n, err := conn.Read(buffer)
-		if err != nil {
-			fmt.Println("Error reading", err)
-			return
-		}
-
-		received := string(buffer[:n])
-		log.Printf("Received: %s", received)
-		if errors.Is(err, io.EOF) {
-			return
-		}
-		conn.Write([]byte("HTTP/1.1 200 OK" + "\r\n\r\n"))
+	buffer := make([]byte, 2048)
+	n, err := conn.Read(buffer)
+	if err != nil {
+		fmt.Println("Error reading", err)
+		return
 	}
+
+	request := string(buffer[:n])
+	log.Printf("Received: %s", request)
+
+	reqLines := strings.Split(request, "\r\n")
+	path := strings.Split(reqLines[0], " ")[1]
+
+	if path == "/" {
+		conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
+	} else {
+		conn.Write([]byte("HTTP/1.1 404 NOT FOUND\r\n\r\n"))
+	}
+
 }
