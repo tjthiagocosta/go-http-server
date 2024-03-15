@@ -1,7 +1,10 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"io"
+	"log"
 	"net"
 	"os"
 )
@@ -15,10 +18,34 @@ func main() {
 		fmt.Println("Failed to bind to port 4221")
 		os.Exit(1)
 	}
+	defer l.Close()
 
-	_, err = l.Accept()
-	if err != nil {
-		fmt.Println("Error accepting connection: ", err.Error())
-		os.Exit(1)
+	for {
+		conn, err := l.Accept()
+		if err != nil {
+			fmt.Println("Error", err)
+			continue
+		}
+		go handleConnection(conn)
+	}
+}
+
+func handleConnection(conn net.Conn) {
+	defer conn.Close()
+
+	for {
+		buffer := make([]byte, 2048)
+		n, err := conn.Read(buffer)
+		if err != nil {
+			fmt.Println("Error reading", err)
+			return
+		}
+
+		received := string(buffer[:n])
+		log.Printf("Received: %s", received)
+		if errors.Is(err, io.EOF) {
+			return
+		}
+		conn.Write([]byte("HTTP/1.1 200 OK" + "\r\n\r\n"))
 	}
 }
