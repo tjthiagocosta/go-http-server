@@ -46,9 +46,12 @@ func handleRequest(conn net.Conn) {
 	path := strings.Split(reqLines[0], " ")[1]
 
 	if path == "/" {
-		conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
+		writeResponse(conn, "HTTP/1.1 200 OK")
 	} else {
-		conn.Write([]byte("HTTP/1.1 404 NOT FOUND\r\n\r\n"))
+		writeResponse(conn, "HTTP/1.1 404 NOT FOUND")
 	}
+}
 
+func writeResponse(conn net.Conn, status string) {
+	_, _ = conn.Write([]byte(status + "\r\n\r\n"))
 }
